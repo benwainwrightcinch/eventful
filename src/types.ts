@@ -10,15 +10,14 @@ export type EventOfKey<TEvent extends Event, TKey extends DetailKeys<TEvent>> = 
 
 export type NotFunction<T> = T extends Function ? never : T
 
-export type Processor<TEvent extends Event, K extends DetailKeys<TEvent>> = <E extends EventOfKey<TEvent, K>, S>(
-  key: K,
-  event: E,
-  state?: S,
-) => S | undefined
+export interface Processor<TEvent extends Event, K extends DetailKeys<TEvent>> {
+  <E extends EventOfKey<TEvent, K>, S>(key: K, event: E, state: S):  S
+  <E extends EventOfKey<TEvent, K>>(key: K, event: E): void 
+}
 
-type InputFunction<TEvent extends Event, K extends DetailKeys<TEvent>, S> = (
+export type InputFunction<TEvent extends Event, K extends DetailKeys<TEvent>, S> = (
   event: TEvent,
-  state?: S,
+  state: S,
 ) => { key: K; state: S }
 
 export type KeyedEventGuard = <TEvent extends Event, K extends DetailKeys<TEvent>, E extends EventOfKey<TEvent, K>>(key: K, event: TEvent) => event is E
@@ -26,7 +25,7 @@ export type KeyedEventGuard = <TEvent extends Event, K extends DetailKeys<TEvent
 export interface EventProcessor {
   <TEvent extends Event, K extends DetailKeys<TEvent>,  S>(
     event: TEvent,
-    state?: S | undefined,
+    state: S,
     ...funcs: (Exclude<DetailKeys<TEvent>, K> extends never ? InputFunction<TEvent, K, S> : never)[]): S | undefined
 
   <TEvent extends Event, K extends DetailKeys<TEvent>,  S>(

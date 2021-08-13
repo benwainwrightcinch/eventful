@@ -1,12 +1,12 @@
-import { DetailKeys, EventOfKey, Event, Processor, NotFunction, EventProcessor } from "./types"
+import { DetailKeys, EventOfKey, Event, Processor, EventProcessor, InputFunction } from "./types"
 
 const isKeyedEvent = <TEvent extends Event, K extends DetailKeys<TEvent>, E extends EventOfKey<TEvent, K>>(
   key: K,
   event: TEvent,
 ): event is E => event['detail-type'] === key
 
-export const addProcessor = <TEvent extends Event, K extends DetailKeys<TEvent>, S>(key: K, processor: Processor<TEvent, K>) => {
-  return (event: TEvent, state?: NotFunction<S>) => {
+export const addProcessor = <TEvent extends Event, K extends DetailKeys<TEvent>>(key: K, processor: Processor<TEvent, K>) => {
+  return <S>(event: TEvent, state: S) => {
     if (isKeyedEvent(key, event)) {
       return { key, state: processor(key, event, state) }
     }
