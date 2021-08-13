@@ -1,41 +1,12 @@
-import { EventBridgeEvent } from 'aws-lambda'
+import { DetailKeys, EventOfKey, Event, Processor, NotFunction, EventProcessor } from "./types"
 
-interface Thing {
-  foo: string
-}
-
-interface Thing2 {
-  bar: string
-}
-
-interface Thing3 {
-  baz: string
-}
-
-type IncomingEvent =
-  | EventBridgeEvent<'foo', Thing>
-  | EventBridgeEvent<'anotherEvent', Thing2>
-  | EventBridgeEvent<'event', Thing3>
-
-type DetailKeys<T> = T extends EventBridgeEvent<infer K, unknown> ? K : never
-
-type EventOfKey<TEvent extends IncomingEvent, TKey extends DetailKeys<TEvent>> = TEvent extends { 'detail-type': TKey }
-  ? TEvent
-  : never
-
-type Processor<K extends DetailKeys<IncomingEvent>> = <E extends EventOfKey<IncomingEvent, K>, S>(
+const isKeyedEvent = <TEvent extends Event, K extends DetailKeys<TEvent>, E extends EventOfKey<TEvent, K>>(
   key: K,
-  event: E,
-  state?: S,
-) => S | undefined
-
-const isKeyedEvent = <K extends DetailKeys<IncomingEvent>, E extends EventOfKey<IncomingEvent, K>>(
-  key: K,
-  event: IncomingEvent,
+  event: TEvent,
 ): event is E => event['detail-type'] === key
 
-const buildEventPipeline = <K extends IncomingEvent['detail-type'], S>(key: K, processor: Processor<K>) => {
-  return (event: IncomingEvent, state?: S) => {
+export const addProcessor = <TEvent extends Event, K extends DetailKeys<TEvent>, S>(key: K, processor: Processor<TEvent, K>) => {
+  return (event: TEvent, state?: NotFunction<S>) => {
     if (isKeyedEvent(key, event)) {
       return { key, state: processor(key, event, state) }
     }
@@ -43,25 +14,11 @@ const buildEventPipeline = <K extends IncomingEvent['detail-type'], S>(key: K, p
   }
 }
 
-type InputFunction<K extends IncomingEvent['detail-type'], S> = (
-  event: IncomingEvent,
-  state?: S,
-) => { key: K; state: S }
+const isFunction = (thing: unknown): thing is Function => typeof thing === 'function'
 
-const buildPipeline =
-  <K extends IncomingEvent['detail-type'], S = undefined>(
-    ...funcs: (Exclude<IncomingEvent['detail-type'], K> extends never ? InputFunction<K, S> : never)[]
-  ) =>
-  (event: IncomingEvent, state?: S): S | undefined =>
-    funcs.reduce((accum, current) => (state ? current(event, accum).state : undefined), state)
-
-const foo = (key: 'foo', event: EventBridgeEvent<'foo', Thing>) => undefined
-const bar = (key: 'anotherEvent', event: EventBridgeEvent<'anotherEvent', Thing2>) => undefined
-
-const validationPipeline = buildPipeline(
-  buildEventPipeline('foo', foo),
-  buildEventPipeline('anotherEvent', bar),
-  buildEventPipeline(''),
-)
-
-const
+export const processEvent: EventProcessor =
+  (event, secondArg, ...args) => {
+    const funcs = isFunction(secondArg) ? [secondArg, ...args] : args
+    const state = isFunction(secondArg) ? undefined : secondArg
+    return funcs.reduce((accum, current) => (accum ? current(event, accum).state : undefined), state)
+}
