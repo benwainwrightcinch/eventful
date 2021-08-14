@@ -41,7 +41,6 @@ export const initPipeline = <
           if(!inputState) {
             throw new Error('Please supply some initial state when you initialise the pipeline')
           }
-          processor
           return { key, state: processor(key, event, inputState)};
         }
         processor(key, event)
