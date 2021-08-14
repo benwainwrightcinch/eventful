@@ -55,7 +55,7 @@ export const handler: Handler<IncomingEvent> = (event) => {
 
   execute(
     /*
-     * If you mismatch the detail string or the handler
+     * If you mismatch the detail-type string or the handler
      * you will get a compile error here. You'll also get a
      * compile error if you delete one of the steps below because
      * you are no longer exhaustively processing all the events
