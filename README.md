@@ -42,8 +42,12 @@ const carProcessor = (key: 'UpdateCarEvent', event: EventBridgeEvent<'UpdateCarE
   console.log(`Is this a train with ${event.detail.carriages} carriages?`)
 }
 
-const trainProcessor = // ...
-const scooterProcessor = // ...
+/* 
+ * more processors :D
+ *
+ * const trainProcessor = ...
+ * const scooterProcessor = ...
+ */
 
 export const handler: Handler<IncomingEvent> = (event) => {
   
