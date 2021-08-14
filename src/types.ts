@@ -13,35 +13,38 @@ export type EventOfKey<
   TKey extends TEvent["detail-type"]
 > = TEvent extends { "detail-type": TKey } ? TEvent : never;
 
-export interface Processor<
+export interface StateFulProcessor<
   TEvent extends Event,
   K extends TEvent["detail-type"],
-  S
+  S extends Record<string, unknown> | undefined
 > {
   (key: K, event: EventBridgeEvent<K, EventsTypeMap<TEvent>[K]>, state: S): S;
+}
+
+export interface StateLessProcessor<
+  TEvent extends Event,
+  K extends TEvent["detail-type"]
+> {
   (key: K, event: EventBridgeEvent<K, EventsTypeMap<TEvent>[K]>): void;
 }
+
+export type Processor<
+  TEvent extends Event,
+  K extends TEvent["detail-type"],
+  S extends Record<string, unknown> | undefined
+  > = StateFulProcessor<TEvent, K, S> | StateLessProcessor<TEvent, K>
+
 
 export type InputFunction<
   TEvent extends Event,
   K extends TEvent["detail-type"],
-  S
-> = (event: TEvent, state: S) => { key: K; state: S };
+  S extends Record<string, unknown> | undefined
+> = (event: TEvent, state?: S) => { key: K; state: S | undefined };
 
-type AddFunction<TEvent extends Event, S> = <K extends TEvent["detail-type"]>(
-  key: K,
-  processor: Processor<TEvent, K, S | undefined>
-) => InputFunction<TEvent, K, S | undefined>;
-
-type ProcessorApi<TEvent extends Event, S> = {
-  step: AddFunction<TEvent, S>;
-  execute: <K extends TEvent["detail-type"]>(
-    ...funcs: (Exclude<TEvent["detail-type"], K> extends never
-      ? InputFunction<TEvent, K, S | undefined>
-      : never)[]
-  ) => S | undefined;
-};
-
-export interface EventPipelineInitialiser {
-  <TEvent extends Event, S>(event: TEvent, state?: S): ProcessorApi<TEvent, S>;
-}
+export type InputFunctionsIfKeysAreExhaustive<
+  TEvent extends Event,
+  K extends TEvent["detail-type"],
+  S extends Record<string, unknown> | undefined
+> = Exclude<TEvent["detail-type"], K> extends never
+  ? InputFunction<TEvent, K, S>
+  : never;

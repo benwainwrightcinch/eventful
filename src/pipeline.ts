@@ -1,8 +1,9 @@
 import {
   Event,
   Processor,
-  EventPipelineInitialiser,
   EventOfKey,
+  InputFunctionsIfKeysAreExhaustive,
+  StateFulProcessor
 } from "./types";
 
 const isKeyedEvent = <
@@ -14,26 +15,46 @@ const isKeyedEvent = <
   event: TEvent
 ): event is E => event["detail-type"] === key;
 
-export const initPipeline: EventPipelineInitialiser = (
-  initialEvent,
-  initialState
+const isStateFullProcessor = <
+  TEvent extends Event,
+  K extends TEvent["detail-type"],
+  S extends Record<string, unknown> | undefined
+>(
+  processor: Processor<TEvent, K, S>
+): processor is StateFulProcessor<TEvent, K, S> => processor.length > 2
+
+export const initPipeline = <
+  TEvent extends Event,
+  S extends Record<string, unknown> | undefined
+>(
+  initialEvent: TEvent,
+  initialState?: S
 ) => ({
   step: <K extends typeof initialEvent["detail-type"]>(
     key: K,
-    processor: Processor<typeof initialEvent, K, typeof initialState>
+    processor: Processor<TEvent, K, S>
   ) => {
-    return (event: typeof initialEvent, state: typeof initialState) => {
+    return (event: TEvent, state?: S) => {
       if (isKeyedEvent(key, event)) {
-        return { key, state: processor(key, event, state) };
+        if(isStateFullProcessor(processor)) {
+          const inputState = state ?? initialState
+          if(!inputState) {
+            throw new Error('Please supply some initial state when you initialise the pipeline')
+          }
+          processor
+          return { key, state: processor(key, event, inputState)};
+        }
+        processor(key, event)
+        return { key, state: undefined};
       }
       return { state, key };
     };
   },
 
-  execute: (...funcs) =>
-    funcs.reduce(
-      (currentState, chosenFunction) =>
-        chosenFunction(initialEvent, currentState).state,
-      initialState
-    ),
+  execute: <K extends TEvent["detail-type"]>(...funcs: InputFunctionsIfKeysAreExhaustive<TEvent, K, S>[]) =>
+       funcs.reduce(
+          (currentState, chosenFunction) =>
+            chosenFunction(initialEvent, currentState).state,
+          initialState
+        )
 });
