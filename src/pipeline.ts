@@ -1,12 +1,10 @@
 import {
   Event,
   Processor,
-  StateLessProcessor,
   EventOfKey,
-  InputFunctionsIfKeysAreExhaustive,
-  InputFunction,
+  StateFullApi,
+  StateLessApi,
   StateFulProcessor,
-  StateLessInputFunction
 } from "./types";
 
 const isKeyedEvent = <
@@ -102,27 +100,4 @@ export function initPipeline <TEvent extends Event, S extends Record<string, unk
   }
 
   return getStateLessApi(initialEvent)
-}
-
-interface StateFullApi<
-  TEvent extends Event,
-  S extends Record<string, unknown>
-> {
-  step: <K extends TEvent["detail-type"]>(
-    key: K,
-    processor: Processor<TEvent, K, S>
-  ) => InputFunction<TEvent, K, S>;
-  execute: <K extends TEvent["detail-type"]>(
-    ...funcs: InputFunctionsIfKeysAreExhaustive<InputFunction<TEvent, K, S>, TEvent, K>[]
-  ) => S;
-}
-
-interface StateLessApi<TEvent extends Event> {
-  step: <K extends TEvent["detail-type"]>(
-    key: K,
-    processor: StateLessProcessor<TEvent, K>
-  ) => StateLessInputFunction<TEvent, K>;
-  execute: <K extends TEvent["detail-type"]>(
-    ...funcs: InputFunctionsIfKeysAreExhaustive<StateLessInputFunction<TEvent, K>, TEvent, K>[]
-  ) => void;
 }
