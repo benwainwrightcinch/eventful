@@ -68,18 +68,13 @@ const getStateFullApi = <
 const getStateLessApi = <TEvent extends Event>(
   initialEvent: TEvent
 ): StateLessApi<TEvent> => ({
-  step: (key, processor) => {
-    return (event) => {
-      if (isKeyedEvent(key, event)) {
-        processor(key, event);
-        return { key };
-      }
-      return { key };
-    };
+  step: (key, processor) => (event) => {
+    if (isKeyedEvent(key, event)) {
+      processor(key, event);
+    }
+    return { key };
   },
-  execute: (...funcs) => {
-    funcs.forEach((func) => func(initialEvent));
-  },
+  execute: (...funcs) => funcs.forEach((func) => func(initialEvent)),
 });
 
 export function initPipeline<
