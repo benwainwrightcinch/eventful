@@ -15,7 +15,7 @@ or casting the types.
 
 ```TypeScript
 import { EventBridgeEvent, Handler } from "aws-lambda";
-import { initPipeline, Processor } from "eventful"
+import { initPipeline } from "eventful"
 
 interface Car {
   doors: 3 | 5
