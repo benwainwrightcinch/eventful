@@ -67,3 +67,7 @@ export const handler: Handler<IncomingEvent> = (event) => {
 }
 
 ```
+
+## Still to do
+
+* Async processors

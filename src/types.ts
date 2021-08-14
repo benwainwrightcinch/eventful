@@ -42,16 +42,14 @@ export type InputFunction<
 
 export type StateLessInputFunction<
   TEvent extends Event,
-  K extends TEvent["detail-type"],
+  K extends TEvent["detail-type"]
 > = (event: TEvent) => { key: K };
 
 export type InputFunctionsIfKeysAreExhaustive<
   F extends Function,
   TEvent extends Event,
-  K extends TEvent["detail-type"],
-> = Exclude<TEvent["detail-type"], K> extends never
-  ? F
-  : never;
+  K extends TEvent["detail-type"]
+> = Exclude<TEvent["detail-type"], K> extends never ? F : never;
 
 export interface StateFullApi<
   TEvent extends Event,
@@ -62,7 +60,11 @@ export interface StateFullApi<
     processor: Processor<TEvent, K, S>
   ) => InputFunction<TEvent, K, S>;
   execute: <K extends TEvent["detail-type"]>(
-    ...funcs: InputFunctionsIfKeysAreExhaustive<InputFunction<TEvent, K, S>, TEvent, K>[]
+    ...funcs: InputFunctionsIfKeysAreExhaustive<
+      InputFunction<TEvent, K, S>,
+      TEvent,
+      K
+    >[]
   ) => S;
 }
 
@@ -72,6 +74,10 @@ export interface StateLessApi<TEvent extends Event> {
     processor: StateLessProcessor<TEvent, K>
   ) => StateLessInputFunction<TEvent, K>;
   execute: <K extends TEvent["detail-type"]>(
-    ...funcs: InputFunctionsIfKeysAreExhaustive<StateLessInputFunction<TEvent, K>, TEvent, K>[]
+    ...funcs: InputFunctionsIfKeysAreExhaustive<
+      StateLessInputFunction<TEvent, K>,
+      TEvent,
+      K
+    >[]
   ) => void;
 }
