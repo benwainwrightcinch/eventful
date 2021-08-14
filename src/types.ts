@@ -28,15 +28,15 @@ export type InputFunction<
   S
 > = (event: TEvent, state: S) => { key: K; state: S };
 
-type AddFunction<TEvent extends Event, S> = <K extends TEvent['detail-type']>(
+type AddFunction<TEvent extends Event, S> = <K extends TEvent["detail-type"]>(
   key: K,
   processor: Processor<TEvent, K, S | undefined>
 ) => InputFunction<TEvent, K, S | undefined>;
 
 type ProcessorApi<TEvent extends Event, S> = {
   step: AddFunction<TEvent, S>;
-  execute: <K extends TEvent['detail-type']>(
-    ...funcs: (Exclude<TEvent['detail-type'], K> extends never
+  execute: <K extends TEvent["detail-type"]>(
+    ...funcs: (Exclude<TEvent["detail-type"], K> extends never
       ? InputFunction<TEvent, K, S | undefined>
       : never)[]
   ) => S | undefined;

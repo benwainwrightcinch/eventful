@@ -2,12 +2,12 @@ import {
   Event,
   Processor,
   EventPipelineInitialiser,
-  EventOfKey
+  EventOfKey,
 } from "./types";
 
 const isKeyedEvent = <
   TEvent extends Event,
-  K extends TEvent['detail-type'],
+  K extends TEvent["detail-type"],
   E extends EventOfKey<TEvent, K>
 >(
   key: K,
@@ -18,7 +18,7 @@ export const initPipeline: EventPipelineInitialiser = (
   initialEvent,
   initialState
 ) => ({
-  step: <K extends (typeof initialEvent)['detail-type']>(
+  step: <K extends typeof initialEvent["detail-type"]>(
     key: K,
     processor: Processor<typeof initialEvent, K, typeof initialState>
   ) => {
