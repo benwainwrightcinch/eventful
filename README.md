@@ -60,8 +60,8 @@ export const handler: Handler<IncomingEvent> = (event) => {
      * compile error if you delete one of the steps below because
      * you are no longer exhaustively processing all the events
      */
-    step('UpdateCarEvent', carProcessor)
-    step('UpdateTrainEvent', trainProcessor)
+    step('UpdateCarEvent', carProcessor),
+    step('UpdateTrainEvent', trainProcessor),
     step('UpdateScooterEvent', scooterProcessor)
   )
 }
