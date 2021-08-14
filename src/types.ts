@@ -32,19 +32,23 @@ export type Processor<
   TEvent extends Event,
   K extends TEvent["detail-type"],
   S extends Record<string, unknown> | undefined
-  > = StateFulProcessor<TEvent, K, S> | StateLessProcessor<TEvent, K>
-
+> = StateFulProcessor<TEvent, K, S> | StateLessProcessor<TEvent, K>;
 
 export type InputFunction<
   TEvent extends Event,
   K extends TEvent["detail-type"],
   S extends Record<string, unknown> | undefined
-> = (event: TEvent, state?: S) => { key: K; state: S | undefined };
+> = (event: TEvent, state: S) => { key: K; state: S };
 
-export type InputFunctionsIfKeysAreExhaustive<
+export type StateLessInputFunction<
   TEvent extends Event,
   K extends TEvent["detail-type"],
-  S extends Record<string, unknown> | undefined
+> = (event: TEvent) => { key: K };
+
+export type InputFunctionsIfKeysAreExhaustive<
+  F extends Function,
+  TEvent extends Event,
+  K extends TEvent["detail-type"],
 > = Exclude<TEvent["detail-type"], K> extends never
-  ? InputFunction<TEvent, K, S>
+  ? F
   : never;

@@ -277,62 +277,177 @@ describe("the event pipeline builder", () => {
 
   describe("When you supply some initial state", () => {
     it("compiles without errors", () => {
+      const mockEvent: IncomingEvent = {
+        id: "123",
+        version: "a",
+        account: "a",
+        time: "a",
+        region: "a",
+        resources: ["a"],
+        source: "a",
+        "detail-type": "anotherEvent",
+        detail: {
+          bar: "foo",
+        },
+      };
 
-    const mockEvent: IncomingEvent = {
-      id: "123",
-      version: "a",
-      account: "a",
-      time: "a",
-      region: "a",
-      resources: ["a"],
-      source: "a",
-      "detail-type": "anotherEvent",
-      detail: {
-        bar: "foo",
-      },
-    };
+      const handlerOne = (
+        _key: "foo",
+        _event: EventBridgeEvent<"foo", Thing>,
+        state_: { foo: string; bar: string }
+      ) => state_;
 
-    const handlerOne = (
-      _key: "foo",
-      _event: EventBridgeEvent<"foo", Thing>,
-      state_: { foo: string; bar: string }
-    ) => state_;
+      const handlerTwo = (
+        _key: "fo2o",
+        _event: EventBridgeEvent<"fo2o", Thing>,
+        state: { foo: string; bar: string }
+      ) => state;
 
-    const handlerTwo = (
-      _key: "fo2o",
-      _event: EventBridgeEvent<"fo2o", Thing>,
-      state: { foo: string; bar: string }
-    ) => state;
+      const handlerThree = (
+        _key: "anotherEvent",
+        _event: EventBridgeEvent<"anotherEvent", Thing2>,
+        state: { foo: string; bar: string }
+      ) => state;
 
-    const handlerThree = (
-      _key: "anotherEvent",
-      _event: EventBridgeEvent<"anotherEvent", Thing2>,
-      state: { foo: string; bar: string }
-    ) => state;
+      const handlerFour = (
+        _key: "event",
+        _event: EventBridgeEvent<"event", Thing3>,
+        state: { foo: string; bar: string }
+      ) => state;
 
-    const handlerFour = (
-      _key: "event",
-      _event: EventBridgeEvent<"event", Thing3>,
-      state: { foo: string; bar: string }
-    ) => state;
+      const initialState = {
+        foo: "hello",
+        bar: "hello",
+      };
 
-    const initialState = {
-      foo: "hello",
-      bar: "hello",
-    };
+      const { execute, step } = initPipeline(
+        mockEvent as IncomingEvent,
+        initialState
+      );
 
-    const { execute, step } = initPipeline(
-      mockEvent as IncomingEvent,
-      initialState
-    );
-
-    execute(
+      execute(
         step("foo", handlerOne),
         step("fo2o", handlerTwo),
         step("anotherEvent", handlerThree),
         step("event", handlerFour)
-    );
+      );
+    });
 
-    })
+    it("allows the handlers to set new state by the return value", () => {
+      const mockEvent: IncomingEvent = {
+        id: "123",
+        version: "a",
+        account: "a",
+        time: "a",
+        region: "a",
+        resources: ["a"],
+        source: "a",
+        "detail-type": "anotherEvent",
+        detail: {
+          bar: "foo",
+        },
+      };
+
+      const handlerOne = (
+        _key: "foo",
+        _event: EventBridgeEvent<"foo", Thing>,
+        state_: { foo: string; bar: string }
+      ) => state_;
+
+      const handlerTwo = (
+        _key: "fo2o",
+        _event: EventBridgeEvent<"fo2o", Thing>,
+        state: { foo: string; bar: string }
+      ) => state;
+
+      const handlerThree = (
+        _key: "anotherEvent",
+        _event: EventBridgeEvent<"anotherEvent", Thing2>,
+        state: { foo: string; bar: string }
+      ) => ({ ...state, foo: "changed" });
+
+      const handlerFour = (
+        _key: "event",
+        _event: EventBridgeEvent<"event", Thing3>,
+        state: { foo: string; bar: string }
+      ) => state;
+
+      const initialState = {
+        foo: "hello",
+        bar: "hello",
+      };
+
+      const { execute, step } = initPipeline(
+        mockEvent as IncomingEvent,
+        initialState
+      );
+
+      const result = execute(
+        step("foo", handlerOne),
+        step("fo2o", handlerTwo),
+        step("anotherEvent", handlerThree),
+        step("event", handlerFour)
+      );
+
+      expect(result.foo).toEqual("changed");
+    });
+
+    it("carries state through even if there are stateless handlers", () => {
+      const mockEvent: IncomingEvent = {
+        id: "123",
+        version: "a",
+        account: "a",
+        time: "a",
+        region: "a",
+        resources: ["a"],
+        source: "a",
+        "detail-type": "anotherEvent",
+        detail: {
+          bar: "foo",
+        },
+      };
+
+      const handlerOne = (
+        _key: "foo",
+        _event: EventBridgeEvent<"foo", Thing>,
+        state_: { foo: string; bar: string }
+      ) => state_;
+
+      const handlerTwo = (
+        _key: "fo2o",
+        _event: EventBridgeEvent<"fo2o", Thing>,
+        state: { foo: string; bar: string }
+      ) => state;
+
+      const handlerThree = (
+        _key: "anotherEvent",
+        _event: EventBridgeEvent<"anotherEvent", Thing2>,
+      ) => {}
+
+      const handlerFour = (
+        _key: "event",
+        _event: EventBridgeEvent<"event", Thing3>,
+        state: { foo: string; bar: string }
+      ) => state;
+
+      const initialState = {
+        foo: "hello",
+        bar: "hello",
+      };
+
+      const { execute, step } = initPipeline(
+        mockEvent as IncomingEvent,
+        initialState
+      );
+
+      const result = execute(
+        step("foo", handlerOne),
+        step("fo2o", handlerTwo),
+        step("anotherEvent", handlerThree),
+        step("event", handlerFour)
+      );
+
+      expect(result).toStrictEqual(initialState)
+    });
   });
 });

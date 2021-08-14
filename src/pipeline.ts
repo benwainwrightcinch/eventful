@@ -1,9 +1,12 @@
 import {
   Event,
   Processor,
+  StateLessProcessor,
   EventOfKey,
   InputFunctionsIfKeysAreExhaustive,
-  StateFulProcessor
+  InputFunction,
+  StateFulProcessor,
+  StateLessInputFunction
 } from "./types";
 
 const isKeyedEvent = <
@@ -21,39 +24,105 @@ const isStateFullProcessor = <
   S extends Record<string, unknown> | undefined
 >(
   processor: Processor<TEvent, K, S>
-): processor is StateFulProcessor<TEvent, K, S> => processor.length > 2
+): processor is StateFulProcessor<TEvent, K, S> => processor.length > 2;
 
-export const initPipeline = <
+const getStateFullApi = <
   TEvent extends Event,
-  S extends Record<string, unknown> | undefined
+  S extends Record<string, unknown>
 >(
   initialEvent: TEvent,
-  initialState?: S
-) => ({
-  step: <K extends typeof initialEvent["detail-type"]>(
-    key: K,
-    processor: Processor<TEvent, K, S>
-  ) => {
-    return (event: TEvent, state?: S) => {
+  initialState: S
+): StateFullApi<TEvent, S> => ({
+  step: (key, processor) => {
+    return (event, state) => {
       if (isKeyedEvent(key, event)) {
-        if(isStateFullProcessor(processor)) {
-          const inputState = state ?? initialState
-          if(!inputState) {
-            throw new Error('Please supply some initial state when you initialise the pipeline')
+        const inputState = state ?? initialState;
+        if (isStateFullProcessor(processor)) {
+          if (!inputState) {
+            throw new Error(
+              "Please supply some initial state when you initialise the pipeline"
+            );
           }
-          return { key, state: processor(key, event, inputState)};
+          return { key, state: processor(key, event, inputState) };
         }
-        processor(key, event)
-        return { key, state: undefined};
+        processor(key, event);
+        return { key, state: inputState };
       }
       return { state, key };
     };
   },
 
-  execute: <K extends TEvent["detail-type"]>(...funcs: InputFunctionsIfKeysAreExhaustive<TEvent, K, S>[]) =>
-       funcs.reduce(
-          (currentState, chosenFunction) =>
-            chosenFunction(initialEvent, currentState).state,
-          initialState
-        )
+  execute: (...funcs) => {
+    const result = funcs.reduce(
+      (currentState, chosenFunction) =>
+        chosenFunction(initialEvent, currentState).state ?? currentState,
+      initialState
+    );
+
+    if (initialState && result) {
+      return result;
+    }
+
+    return initialState;
+  },
 });
+
+const getStateLessApi = <TEvent extends Event>(
+  initialEvent: TEvent
+): StateLessApi<TEvent> => ({
+  step: (key, processor) => {
+    return (event) => {
+      if (isKeyedEvent(key, event)) {
+        processor(key, event);
+        return { key };
+      }
+      return { key };
+    };
+  },
+  execute: (...funcs) => {
+    funcs.forEach((func) => func(initialEvent));
+  },
+});
+
+export function initPipeline<TEvent extends Event, S extends Record<string, unknown>>(
+  initialEvent: TEvent,
+  initialState: S
+): StateFullApi<TEvent, S>
+
+export function initPipeline<TEvent extends Event>(
+  initialEvent: TEvent
+): StateLessApi<TEvent>
+
+export function initPipeline <TEvent extends Event, S extends Record<string, unknown>>(
+  initialEvent: TEvent,
+  initialState?: S
+) {
+  if(initialState) {
+    return getStateFullApi(initialEvent, initialState)
+  }
+
+  return getStateLessApi(initialEvent)
+}
+
+interface StateFullApi<
+  TEvent extends Event,
+  S extends Record<string, unknown>
+> {
+  step: <K extends TEvent["detail-type"]>(
+    key: K,
+    processor: Processor<TEvent, K, S>
+  ) => InputFunction<TEvent, K, S>;
+  execute: <K extends TEvent["detail-type"]>(
+    ...funcs: InputFunctionsIfKeysAreExhaustive<InputFunction<TEvent, K, S>, TEvent, K>[]
+  ) => S;
+}
+
+interface StateLessApi<TEvent extends Event> {
+  step: <K extends TEvent["detail-type"]>(
+    key: K,
+    processor: StateLessProcessor<TEvent, K>
+  ) => StateLessInputFunction<TEvent, K>;
+  execute: <K extends TEvent["detail-type"]>(
+    ...funcs: InputFunctionsIfKeysAreExhaustive<StateLessInputFunction<TEvent, K>, TEvent, K>[]
+  ) => void;
+}
